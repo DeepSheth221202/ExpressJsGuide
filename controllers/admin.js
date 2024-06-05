@@ -13,8 +13,11 @@ exports.postAddProduct = (req,res)=>{
     const price = parseFloat(req.body.price);
     const description = req.body.description;
     const product = new Product(null,title,price,description,imageUrl);
-    product.save();
-    res.redirect('/'); 
+    product.save()
+    .then(()=>{res.redirect('/');})
+    .catch(err=>{
+        console.log(err);
+    });
 }; 
 
 exports.getEditProduct = (req, res, next)=>{
