@@ -1,25 +1,18 @@
 const express = require('express');
-const path = require('path');
-
-const rootDir = require('../util/path');
+const adminController = require('../controllers/admin');
 
 const router = express.Router();
- 
-const products = []; 
 
+router.get('/add-product',adminController.getAddProduct);
 
-// /admin/add-product
-router.get('/add-product',(req, res, next)=>{
-    //res.sendFile(path.join(__dirname,'../','views','add-product.html')) //also we can use '..' instead of '../'
-    //res.sendFile(path.join(rootDir,'views','add-product.html')); //more cleaner version of above by using helper function in path.js
-    res.render('add-product',{pageTitle:"add-product",path:"add-product"});
-});
+router.get('/edit-product/:productId',adminController.getEditProduct);
 
-// /admin/product
-router.post('/product',(req,res)=>{
-    products.push({title:req.body.title}); 
-    res.redirect('/'); 
-});
+router.post('/edit-product',adminController.postEditProduct);
 
-exports.routes = router;
-exports.products = products;
+router.get('/products',adminController.getProducts);
+
+router.post('/product',adminController.postAddProduct);
+
+router.post('/delete-product',adminController.postDeleteProduct);
+
+module.exports = router;  
