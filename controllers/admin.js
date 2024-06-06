@@ -13,11 +13,18 @@ exports.postAddProduct = (req,res)=>{
     const price = parseFloat(req.body.price);
     const description = req.body.description;
     const product = new Product(null,title,price,description,imageUrl);
-    product.save()
-    .then(()=>{res.redirect('/');})
-    .catch(err=>{
-        console.log(err);
-    });
+    req.user
+    .createProduct({
+        title:title,
+        imageUrl:imageUrl,
+        price:price,
+        description:description
+    }) // this method is automatically added by sequelize because we have initialized the relations in app.js (this is called magic association method)
+    .then(result=>{
+        console.log(result)
+        res.redirect('/admin/products');
+    })
+    .catch(err=>console.log(err));
 }; 
 
 exports.getEditProduct = (req, res, next)=>{
@@ -26,7 +33,13 @@ exports.getEditProduct = (req, res, next)=>{
         return res.redirect('/');
     } 
     const prodId = req.params.productId;
-    Product.findById(prodId,product=>{
+    //Product.findByPk(prodId)
+    req.user.
+    getProducts({where:{id:prodId}}) 
+    //this will makesure that only current user's product will be there (it will select all the products whoose userid==currUserId and prodId==id)
+    .then(products=>{
+        const product = products[0]; 
+        //as getProducts() will return array of products
         if(!product){
             return res.redirect('/');
         }
@@ -46,23 +59,45 @@ exports.postEditProduct = (req,res,next)=>{
     const imageUrl = req.body.imageUrl;
     const price = parseFloat(req.body.price);
     const description = req.body.description;
-    const updatedProduct = new Product(productId,title,price,description,imageUrl);
-    updatedProduct.save();
-    res.redirect('/admin/products');
+    Product.findByPk(productId).then(
+        product=>{
+            product.title = title;
+            product.price = price;
+            product.description = description;
+            product.imageUrl = imageUrl;
+            return product.save();
+        }
+    )
+    .then(result=>{
+        console.log('UPDATED PRODUCT!');
+        res.redirect('/admin/products');
+    })
+    .catch(err=>console.log(err));
+    
 };
 
 exports.getProducts = (req,res,next) =>{
-    Product.fetchAll((products)=>{
-        res.render('admin/products',{
-            pageTitle:"Admin Products",
-            path:"/admin/products",
-            prods:products
-        });
-    });
+    req.user.getProducts()
+    .then(
+        products=>{
+            res.render('admin/products',{
+                pageTitle:"Admin Products",
+                path:"/admin/products",
+                prods:products
+            });
+        })
+        .catch(err=>console.log(err));
 };
 
 exports.postDeleteProduct =(req,res,next) =>{
     const pId = req.body.productId;
-    Product.deleteById(pId);
-    res.redirect('/admin/products');
+    Product.findByPk(pId)
+    .then(product=>{
+        return product.destroy();
+    })
+    .then(result=>{
+        console.log("DELETED!");
+        res.redirect('/admin/products');
+    })
+    .catch(err=>console.log(err));
 };
