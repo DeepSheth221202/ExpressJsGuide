@@ -13,8 +13,9 @@ exports.postAddProduct = (req,res)=>{
     const imageUrl = req.body.imageUrl;
     const price = parseFloat(req.body.price);
     const description = req.body.description;
-    const product = new Product(title,imageUrl,description,price,null,req.user._id);
-    product.save()
+    const userId = req.user._id;
+    const product = new Product({title:title,description:description,price:price,imageUrl:imageUrl,userId:userId});
+    product.save() //this is mongoose save method.. which dont return promise but still mongoose have .then() and .catch() which we can use here
     .then(result=>{
         console.log(result)
         res.redirect('/admin/products');
@@ -50,8 +51,13 @@ exports.postEditProduct = (req,res,next)=>{
     const imageUrl = req.body.imageUrl;
     const price = parseFloat(req.body.price);
     const description = req.body.description;
-    const updatedProduct = new Product(title,imageUrl,description,price,productId);
-    updatedProduct.save()
+    Product.findById(productId).then(product=>{
+        product.description = description;
+        product.imageUrl = imageUrl;
+        product.price= price;
+        product.title = title;
+        product.save();
+    })
     .then(result=>{
         console.log('UPDATED PRODUCT!');
         res.redirect('/admin/products');
@@ -61,7 +67,7 @@ exports.postEditProduct = (req,res,next)=>{
 };
 
 exports.getProducts = (req,res,next) =>{
-    Product.fetchAll()
+    Product.find()
     .then(
         products=>{
             res.render('admin/products',{
@@ -75,7 +81,7 @@ exports.getProducts = (req,res,next) =>{
 
 exports.postDeleteProduct =(req,res,next) =>{
     const pId = req.body.productId;
-    Product.deleteById(pId)
+    Product.findByIdAndDelete(pId)
     .then(()=>{
         console.log("DELETED!");
         res.redirect('/admin/products');
